@@ -1,407 +1,301 @@
-
-// system include files
 #include <memory>
-
+#include <TMath.h>
 // user include files
 #include "FWCore/Framework/interface/Frameworkfwd.h"
 #include "FWCore/Framework/interface/EDAnalyzer.h"
 #include "FWCore/Framework/interface/Event.h"
 #include "FWCore/Framework/interface/MakerMacros.h"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
-
-//------ EXTRA HEADER FILES--------------------//
-#include "math.h"
-#include "FWCore/Framework/interface/EventSetup.h"
-#include "FWCore/Framework/interface/ESHandle.h"
-#include "FWCore/MessageLogger/interface/MessageLogger.h"
-#include "FWCore/ServiceRegistry/interface/Service.h"
 #include "CommonTools/UtilAlgos/interface/TFileService.h"
 #include "DataFormats/Common/interface/Ref.h"
+#include "FWCore/Framework/interface/ESHandle.h"
+#include "FWCore/Framework/interface/EventSetup.h"
+#include "FWCore/MessageLogger/interface/MessageLogger.h"
+#include "FWCore/ServiceRegistry/interface/Service.h"
+#include "math.h"
 
-// for tracking information
-#include "DataFormats/TrackReco/interface/Track.h"
-#include "DataFormats/TrackReco/interface/TrackFwd.h"
-#include "DataFormats/TrackReco/interface/HitPattern.h"
-
-// for vertex information 
+//classes to extract PFJet information
+#include "DataFormats/JetReco/interface/CaloJet.h"
+#include "DataFormats/JetReco/interface/CaloJetCollection.h"
+#include "DataFormats/BTauReco/interface/JetTag.h"
+#include "CondFormats/JetMETObjects/interface/JetCorrectionUncertainty.h"
+#include "CondFormats/JetMETObjects/interface/FactorizedJetCorrector.h"
+#include "CondFormats/JetMETObjects/interface/JetCorrectorParameters.h"
+#include "CondFormats/JetMETObjects/interface/SimpleJetCorrector.h"
+#include "CondFormats/JetMETObjects/interface/SimpleJetCorrectionUncertainty.h"
 #include "DataFormats/VertexReco/interface/Vertex.h"
 #include "DataFormats/VertexReco/interface/VertexFwd.h"
+#include "DataFormats/JetReco/interface/Jet.h"
+//#include "SimDataFormats/JetMatching/interface/JetFlavourInfo.h"
+#include "SimDataFormats/JetMatching/interface/JetFlavour.h"
+//#include "SimDataFormats/JetMatching/interface/JetFlavourInfoMatching.h"
+#include "SimDataFormats/JetMatching/interface/JetFlavourMatching.h"
+#include "DataFormats/JetReco/interface/CaloJet.h"
+#include "DataFormats/RecoCandidate/interface/RecoCandidate.h"
 
-// for muons
-#include "DataFormats/MuonReco/interface/Muon.h"
-#include "DataFormats/MuonReco/interface/MuonFwd.h"
-#include "DataFormats/MuonReco/interface/MuonSelectors.h"
-#include "DataFormats/MuonReco/interface/MuonIsolation.h"
+#include "DataFormats/JetReco/interface/PFJetCollection.h"
+#include "DataFormats/ParticleFlowCandidate/interface/PFCandidate.h"
+#include "DataFormats/ParticleFlowReco/interface/PFBlock.h"
+#include "DataFormats/ParticleFlowReco/interface/PFCluster.h"
+#include "DataFormats/ParticleFlowReco/interface/PFClusterFwd.h"
+#include "DataFormats/TrackReco/interface/Track.h"
+#include "DataFormats/TrackReco/interface/TrackFwd.h"
+#include "TTree.h"
+#include "TFile.h"
+#include<vector>
 
-// for electrons uncomment when implemented
-//#include "DataFormats/GsfTrackReco/interface/GsfTrack.h"
-//#include "DataFormats/EgammaCandidates/interface/GsfElectron.h"
+#include "TRandom3.h"
 
-//for beamspot information
-#include "DataFormats/BeamSpot/interface/BeamSpot.h"
-
-// triggers
-#include "DataFormats/Common/interface/TriggerResults.h"
-#include "HLTrigger/HLTcore/interface/HLTConfigProvider.h"
-
-// ROOT
-#include <TLorentzVector.h>
-#include <TFile.h>
-#include <TTree.h>
-
-#include <TTree.h>
-#include <TDirectory.h>
 
 //
 // class declaration
 //
-class Analyzer : public edm::EDAnalyzer {
-   public:
-      explicit Analyzer(const edm::ParameterSet&);
-      ~Analyzer();
 
-      static void fillDescriptions(edm::ConfigurationDescriptions& descriptions);
+using namespace std;
 
-
-   private:
-      virtual void beginJob() ;
-      virtual void analyze(const edm::Event&, const edm::EventSetup&);
-      virtual void endJob() ;
-
-      virtual void beginRun(edm::Run const&, edm::EventSetup const&);
-      virtual void endRun(edm::Run const&, edm::EventSetup const&);
-      virtual void beginLuminosityBlock(edm::LuminosityBlock const&, edm::EventSetup const&);
-      virtual void endLuminosityBlock(edm::LuminosityBlock const&, edm::EventSetup const&);
+class JetAnalyzer : public edm::EDAnalyzer {
+public:
+  explicit JetAnalyzer(const edm::ParameterSet&);
+  ~JetAnalyzer();
+  
+  static void fillDescriptions(edm::ConfigurationDescriptions& descriptions);
+//  std::vector<float> factorLookup(float eta);
+private:
+  virtual void beginJob() ;
+  virtual void analyze(const edm::Event&, const edm::EventSetup&);
+  virtual void endJob() ;
+  virtual void beginRun(edm::Run const&, edm::EventSetup const&);
+  virtual void endRun(edm::Run const&, edm::EventSetup const&);
+  virtual void beginLuminosityBlock(edm::LuminosityBlock const&, edm::EventSetup const&);
+  virtual void endLuminosityBlock(edm::LuminosityBlock const&, edm::EventSetup const&);  
       
-      // user routines (detailed description given with the method implementations)
-      int SelectEvent(const edm::Event& iEvent);
-      int SelectMu(const edm::Handle<reco::TrackCollection>& muons, const reco::VertexCollection::const_iterator& pv);
-// Note that muons are taken from the TrackCollection one can collect other necessary data from the input root file by looking
-// at its structure in the TBrowser:
-// i.e. from the TBrowser we see a folder called:  recoTracks_globalMuons__RECO.
-// This means using edm::Handle<reco::TrackCollection> is needed to get hte data (see line just above) and globalMuons will be the 
-// relative input tag used in the analyzer function.
-   //   int SelectEl(const edm::Handle<reco::GsfElectronCollection>& electrons, const reco::VertexCollection::const_iterator& pv);
-      int SelectPrimaryVertex(const edm::Handle<reco::VertexCollection>& primVertex);
-      const reco::Candidate* GetFinalState(const reco::Candidate* particle, const int id);
-      void FillFourMomentum(const reco::Candidate* particle, float* p);
-      void InitBranchVars();
+  //declare the input tag for PFJetCollection
+  edm::InputTag jetInput;
+  
+  // ----------member data ---------------------------    
+  
+  bool isData;
 
-      // input tags
-      edm::InputTag _inputTagMuons;
-      edm::InputTag _inputTagElectrons;
-      edm::InputTag _inputTagBtags;
-      edm::InputTag _inputTagPrimaryVertex;
+  int numjet; //number of jets in the event
+  TTree *mtree;
+  std::vector<float> jet_e;
+  std::vector<float> jet_pt;
+  std::vector<float> jet_px;
+  std::vector<float> jet_py;
+  std::vector<float> jet_pz;
+  std::vector<float> jet_eta;
+  std::vector<float> jet_phi;
+  std::vector<float> jet_ch;
+  std::vector<float> jet_mass;
+  std::vector<double> jet_btag;
+  std::vector<float> corr_jet_pt;
+  std::vector<float> corr_jet_ptUp;
+  std::vector<float> corr_jet_ptDown;
+  std::vector<float> corr_jet_ptSmearUp;
+  std::vector<float> corr_jet_ptSmearDown;
+  float btagWeight;
+  float btagWeightUp;
+  float btagWeightDn;
 
-      // general flags and variables
-      int _flagMC;
-      int _flagRECO;
-      int _flagGEN;
-      int _nevents;
-      int _neventsSelected;
-      int _signLeptonP;
-      int _signLeptonM;
-      
-      // storage
-      TFile* _file;
-      TTree* _tree;
-      
-      // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-      // >>>>>>>>>>>>>>>> event variables >>>>>>>>>>>>>>>>>>>>>>>
-      // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-      // (their description given when tree branches are created)
-      // event
-      int _evRunNumber;
-      int _evEventNumber;
-      // muons
-      static const int _maxNmu = 10;
-      int _Nmu;
-      int _Nmu0;
-      float _muPt[_maxNmu];
-      float _muEta[_maxNmu];
-      float _muPhi[_maxNmu];
-      float _muC[_maxNmu];
-      float _muIso03[_maxNmu];
-      float _muIso04[_maxNmu];
-      int _muHitsValid[_maxNmu];
-      int _muHitsPixel[_maxNmu];
-      float _muDistPV0[_maxNmu];
-      float _muDistPVz[_maxNmu];
-      float _muTrackChi2NDOF[_maxNmu];
-      // electrons
-      static const int _maxNel = 10;
-      int _Nel;
-      float _elPt[_maxNel];
-      float _elEta[_maxNel];
-      float _elPhi[_maxNel];
-      float _elIso03[_maxNel];
-      float _elIso04[_maxNel];
-      int _elConvFlag[_maxNel];
-      float _elConvDist[_maxNel];
-      float _elConvDcot[_maxNel];
-      float _elMissHits[_maxNel];
-      float _elDistPV0[_maxNel];
-      float _elDistPVz[_maxNel];
-      // primary vertex
-      int _Npv;
-      int _pvNDOF;
-      float _pvZ;
-      float _pvRho;
 };
 
 //
-// constants (particle masses)
+// constants, enums and typedefs
 //
-double _massMu = 0.105658;
-double _massEl = 0.000511;
 
 //
-// constructor
+// static data member definitions
 //
-Analyzer::Analyzer(const edm::ParameterSet& iConfig)
+
+//
+// constructors and destructor
+//
+
+JetAnalyzer::JetAnalyzer(const edm::ParameterSet& iConfig)
 {
-  // for proper log files writing (immediate output)
-  setbuf(stdout, NULL);
-  
-  // input tags
-  _inputTagMuons = edm::InputTag("globalMuons");
-  //_inputTagElectrons = edm::InputTag("gsfElectrons"); //use this to Analyze electrons
-  _inputTagPrimaryVertex = edm::InputTag("offlinePrimaryVertices"); //vertex input tag used for pp collisions
-  //_inputTagPrimaryVertex = edm::InputTag("hiSelectedVertex"); //'hiSelectedVertex' is generally used for PbPb collisions
-  
-  // read configuration parameters
-  _flagMC = 0;//iConfig.getParameter<int>("mc"); // true for MC, false for data
-  _flagRECO = 1;//iConfig.getParameter<int>("reco"); // if true, RECO level processed
-  _flagGEN = 0;//iConfig.getParameter<int>("gen"); // if true, generator level processed (works only for MC)
-  _nevents = 0; // number of processed events
-  _neventsSelected = 0; // number of selected events
+//now do what ever initialization is needed
+  jetInput = iConfig.getParameter<edm::InputTag>("InputCollection");
   edm::Service<TFileService> fs;
-  _tree = fs->make<TTree>("Muons", "Muons"); //make output tree
-
-  // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-  // >>>>>>> tree branches >>>>>>>>>>>>
-  // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-  //
-  // event
-  _tree->Branch("evRunNumber", &_evRunNumber, "evRunNumber/I"); // run number
-  _tree->Branch("evEventNumber", &_evEventNumber, "evEventNumber/I"); // event number
-
-  if(_flagRECO)
-  {
-    // muons
-    _tree->Branch("Nmu", &_Nmu, "Nmu/I"); // number of muons 
-    _tree->Branch("muPt", _muPt, "muPt[Nmu]/F"); // muon pT
-    _tree->Branch("muEta", _muEta, "muEta[Nmu]/F"); // muon pseudorapidity
-    _tree->Branch("muPhi", _muPhi, "muPhi[Nmu]/F"); // muon phi
-    _tree->Branch("muC", _muC, "muC[Nmu]/F"); // muon phi
-    _tree->Branch("muIso03", _muIso03, "muIso03[Nmu]/F"); // muon isolation, delta_R=0.3
-    _tree->Branch("muIso04", _muIso04, "muIso04[Nmu]/F"); // muon isolation, delta_R=0.4
-    _tree->Branch("muHitsValid", _muHitsValid, "muHitsValid[Nmu]/I"); // muon valid hits number
-    _tree->Branch("muHitsPixel", _muHitsPixel, "muHitsPixel[Nmu]/I"); // muon pixel hits number
-    _tree->Branch("muDistPV0", _muDistPV0, "muDistPV0[Nmu]/F"); // muon distance to the primary vertex (projection on transverse plane)
-    _tree->Branch("muDistPVz", _muDistPVz, "muDistPVz[Nmu]/F"); // muon distance to the primary vertex (z projection)
-    _tree->Branch("muTrackChi2NDOF", _muTrackChi2NDOF, "muTrackChi2NDOF[Nmu]/F"); // muon track number of degrees of freedom
-    // primary vertex
-    _tree->Branch("Npv", &_Npv, "Npv/I"); // total number of primary vertices
-    _tree->Branch("pvNDOF", &_pvNDOF, "pvNDOF/I"); // number of degrees of freedom of the primary vertex
-    _tree->Branch("pvZ", &_pvZ, "pvZ/F"); // z component of the primary vertex
-    _tree->Branch("pvRho", &_pvRho, "pvRho/F"); // rho of the primary vertex (projection on transverse plane)
-  }
-
-}
-
-
-// destructor
-Analyzer::~Analyzer()
-{
-}
-
-
-//
-// member functions
-//
-
-// initialise event variables with needed default (zero) values; called in the beginning of each event
-void Analyzer::InitBranchVars()
-{
-  _evRunNumber = 0;
-  _evEventNumber = 0;
-  _Nmu = 0;
-  _Npv= 0;
-  _pvNDOF = 0;
-  _pvZ = 0;
-  _pvRho = 0;
-}
-
-// Store event info (fill corresponding tree variables)
-int Analyzer::SelectEvent(const edm::Event& iEvent)
-{
-  _evRunNumber = iEvent.id().run();
-  _evEventNumber = iEvent.id().event();
-  return 0;
-}
-
-// muon selection
-int Analyzer::SelectMu(const edm::Handle<reco::TrackCollection>& muons, const reco::VertexCollection::const_iterator& pv)
-{
-  using namespace std;
-  _Nmu = 0;
-  _Nmu0 = 0;
-  // loop over muons
-  for (reco::TrackCollection::const_iterator it = muons->begin(); it != muons->end(); it++)
-  {
-	_Nmu0++;
-    if(_Nmu == _maxNmu)
-    {
-      printf("Maximum number of muons %d reached, skipping the rest\n", _maxNmu);
-      return 0;
-    }
-    _muHitsValid[_Nmu] = 0;
-    _muHitsPixel[_Nmu] = 0;
-    const reco::HitPattern& p = it->hitPattern();
-    for (int i = 0; i < p.numberOfHits(); i++) 
-    {
-      uint32_t hit = p.getHitPattern(i);
-      if (p.validHitFilter(hit) && p.pixelHitFilter(hit))
-        _muHitsPixel[_Nmu]++;
-      if (p.validHitFilter(hit))
-        _muHitsValid[_Nmu]++;
-    }
-    // fill three momentum (pT, eta, phi)
-    _muPt[_Nmu] = it->pt();// * it->charge();
-    _muEta[_Nmu] = it->eta();
-    _muPhi[_Nmu] = it->phi();
-    _muC[_Nmu]=it->charge();
-    // fill chi2/ndof
-    if (it->ndof()) _muTrackChi2NDOF[_Nmu] = it->chi2() / it->ndof();
-    // fill distance to primary vertex
-    _muDistPV0[_Nmu] = TMath::Sqrt(TMath::Power(pv->x() - it->vx(), 2.0) + TMath::Power(pv->y() - it->vy(), 2.0));
-    _muDistPVz[_Nmu] = TMath::Abs(pv->z() - it->vz());
-    // store muon
-    _Nmu++;
-    // determine muon sign (in the end the event will be stored only there are opposite signed leptons)
-    if(it->charge() == +1)
-        _signLeptonP = 1;
-    if(it->charge() == -1)
-        _signLeptonM = 1;
-  }
-	cout<<"Muons before selection: "<<_Nmu0<<endl;
-  return 0;
-}
-
-// select primary vertex
-int Analyzer::SelectPrimaryVertex(const edm::Handle<reco::VertexCollection>& primVertex)
-{
-  // if no primary vertices in the event, return false status
-  if(primVertex->size() == 0)
-    return false;
-  // take the first primary vertex
-  reco::VertexCollection::const_iterator pv = primVertex->begin();
-  // fill z and rho (projection on transverse plane)
-  _pvZ = pv->z();
-  _pvRho = TMath::Sqrt(TMath::Power(pv->x(), 2.0) + TMath::Power(pv->y(), 2.0));
-  // fill number of primary veritces
-  _Npv = primVertex->size();
-  // fill number of degrees of freedom
-  _pvNDOF = pv->ndof();
-  // return true status
-  return true;
-}
-
-// fill 4-momentum (p) with provided particle pointer
-void Analyzer::FillFourMomentum(const reco::Candidate* particle, float* p)
-{
-  // if NULL pointer provided, initialise with default (zero)
-  if(particle == NULL)
-  {
-    p[0] = p[1] = p[2] = p[3] = 0.0;
-    return;
-  }
+  mtree = fs->make<TTree>("Events", "Events");
   
-  p[0] = particle->px();
-  p[1] = particle->py();
-  p[2] = particle->pz();
-  p[3] = particle->mass();
+  isData = iConfig.getParameter<bool>("isData");
+
+	
+  mtree->Branch("numberjet",&numjet);
+  mtree->GetBranch("numberjet")->SetTitle("Number of Jets");
+  mtree->Branch("jet_e",&jet_e);
+  mtree->GetBranch("jet_e")->SetTitle("Uncorrected Jet Energy");
+  mtree->Branch("jet_pt",&jet_pt);
+  mtree->GetBranch("jet_pt")->SetTitle("Uncorrected Transverse Jet Momentum");
+  mtree->Branch("jet_px",&jet_px);
+  mtree->GetBranch("jet_px")->SetTitle("X-Component of Jet Momentum");
+  mtree->Branch("jet_py",&jet_py); 
+  mtree->GetBranch("jet_py")->SetTitle("Y-Component of Jet Momentum");
+  mtree->Branch("jet_pz",&jet_pz);
+  mtree->GetBranch("jet_pz")->SetTitle("Z-Component of Jet Momentum");
+  mtree->Branch("jet_eta",&jet_eta);
+  mtree->GetBranch("jet_eta")->SetTitle("Jet Eta");
+  mtree->Branch("jet_phi",&jet_phi);
+  mtree->GetBranch("jet_phi")->SetTitle("Jet Phi");
+  mtree->Branch("jet_ch",&jet_ch);
+  mtree->GetBranch("jet_ch")->SetTitle("Jet Charge");
+  mtree->Branch("jet_mass",&jet_mass);
+  mtree->GetBranch("jet_mass")->SetTitle("Jet Mass");
+  mtree->Branch("jet_btag",&jet_btag);
+  mtree->GetBranch("jet_btag")->SetTitle("Jet Btagging Discriminant (CSV)");
+  mtree->Branch("corr_jet_pt",&corr_jet_pt);
+  mtree->GetBranch("corr_jet_pt")->SetTitle("Corrected Transverse Jet Momentum");
+  mtree->Branch("corr_jet_ptUp",&corr_jet_ptUp);
+  mtree->GetBranch("corr_jet_ptUp")->SetTitle("Corrected Transverse Jet Momentum (JEC Shifted Up)");
+  mtree->Branch("corr_jet_ptDown",&corr_jet_ptDown);
+  mtree->GetBranch("corr_jet_ptDown")->SetTitle("Corrected Transverse Jet Momentum (JEC Shifted Down)");
+  mtree->Branch("corr_jet_ptSmearUp",&corr_jet_ptSmearUp);
+  mtree->GetBranch("corr_jet_ptSmearUp")->SetTitle("Corrected Transverse Jet Momentum (JER Shifted Up)");
+  mtree->Branch("corr_jet_ptSmearDown",&corr_jet_ptSmearDown);	
+  mtree->GetBranch("corr_jet_ptSmearDown")->SetTitle("Corrected Transverse Jet Momentum (JER Shifted Down)");
+  mtree->Branch("btag_Weight", &btagWeight);
+  mtree->GetBranch("btag_Weight")->SetTitle("B-Tag event weight");
+  mtree->Branch("btag_WeightUp", &btagWeightUp);
+  mtree->GetBranch("btag_WeightUp")->SetTitle("B-Tag Up event weight");
+  mtree->Branch("btag_WeightDn", &btagWeightDn);
+  mtree->GetBranch("btag_WeightDn")->SetTitle("B-Tag Down event weight");
 }
 
-// select MC generator level information
-// (analysis specific ttbar dileptonic decay)
-
-// ------------ method called for each event  ------------
-void Analyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
+JetAnalyzer::~JetAnalyzer()
 {
+   // do anything here that needs to be done at desctruction time
+   // (e.g. close files, deallocate resources etc.)
+}
+       
+void
+JetAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
+{
+
   using namespace edm;
-	using namespace reco;
-	using namespace std;
+  using namespace std;
 
-  // event counting, printout after each 1K processed events
-  _nevents++;
-  //printf("*** EVENT %6d ***\n", _nevents);
-  if( (_nevents % 1000) == 0)
-  {
-    //printf("*****************************************************************\n");
-    printf("************* NEVENTS = %d K, selected = %d *************\n", _nevents / 1000, _neventsSelected);
-    //printf("*****************************************************************\n");
+  Handle<reco::CaloJetCollection> myjets;
+  iEvent.getByLabel(jetInput, myjets);
+  Handle<reco::JetTagCollection> btags;
+  iEvent.getByLabel(InputTag("combinedSecondaryVertexBJetTags"), btags);
+  Handle<double> rhoHandle;
+  iEvent.getByLabel(InputTag("fixedGridRhoAll"), rhoHandle);
+  Handle<reco::VertexCollection> vertices;
+  iEvent.getByLabel(InputTag("offlinePrimaryVertices"), vertices);
+  Handle<reco::JetFlavourMatchingCollection> injets;
+  if (isData){
+    iEvent.getByLabel(InputTag("InputCollection"), injets);
   }
-  //return;
+
+  numjet = 0;
+  jet_e.clear();
+  jet_pt.clear();
+  jet_px.clear();
+  jet_py.clear();
+  jet_pz.clear();
+  jet_eta.clear();
+  jet_phi.clear();
+  jet_ch.clear();
+  jet_mass.clear();
+  jet_btag.clear();
+  corr_jet_pt.clear();
+  corr_jet_ptUp.clear();
+  corr_jet_ptDown.clear();
+  corr_jet_ptSmearUp.clear();
+  corr_jet_ptSmearDown.clear();
   
-  // declare event contents
-  Handle<reco::VertexCollection> primVertex;
-  edm::Handle<reco::TrackCollection> muons;
+  if (myjets.isValid()){
+    double corr, corrUp, corrDown;
+    float ptscale, ptscale_down, ptscale_up, res;
+    double MC = 1;
+    btagWeight = 1;
+    btagWeightUp = 1;
+    btagWeightDn = 1;
+    int min_pt = 0;
+    cout << "Integer printf(\"LoopTest1\\n\") = "<< MC << endl;
+    for (reco::CaloJetCollection::const_iterator itjet=myjets->begin(); itjet!=myjets->end(); ++itjet){
+      reco::Candidate::LorentzVector uncorrJet = itjet->p4();
+      
+      corr = 1;
+      cout << "Integer printf(\"LoopTest2\\n\") = "<< corr << endl;
+      
+      corrUp = 1.0;
+      corrDown = 1.0;
 
-  // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-  // >>>>>>>>> event selection >>>>>>>>>
-  // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-  //
-  // initialise event variables with default values
-  InitBranchVars();
-  // process generator level, if needed
-  // process reco level, if needed
-  if(_flagRECO)
-  {
-    // primary vertex
-    iEvent.getByLabel(_inputTagPrimaryVertex, primVertex);
-    reco::VertexCollection::const_iterator pv = primVertex->begin();
-    // muons
-    iEvent.getByLabel(_inputTagMuons, muons);
-    SelectMu(muons, pv);
-    // fill primary vertex
-    SelectPrimaryVertex(primVertex);
+      ptscale = 1;
+      ptscale_down = 1;
+      ptscale_up = 1;
+      res = 1;
+      
+      if (ptscale*corr*uncorrJet.pt() >= min_pt){
+	
+	jet_e.push_back(itjet->energy());
+	jet_pt.push_back(itjet->pt());
+	jet_px.push_back(itjet->px());
+	jet_py.push_back(itjet->py());
+	jet_pz.push_back(itjet->pz());
+	jet_eta.push_back(itjet->eta());
+	jet_phi.push_back(itjet->phi());
+	jet_ch.push_back(itjet->charge());
+	jet_mass.push_back(itjet->mass());
+	if(btags.isValid() && (itjet - myjets->begin()) < btags->size()) {
+	  jet_btag.push_back(btags->operator[](itjet - myjets->begin()).second);
+	}
+	else jet_btag.push_back(-999);
+	corr_jet_pt.push_back(ptscale*corr*uncorrJet.pt());
+	corr_jet_ptUp.push_back(ptscale*corrUp*uncorrJet.pt());
+	corr_jet_ptDown.push_back(ptscale*corrDown*uncorrJet.pt());
+	corr_jet_ptSmearUp.push_back(ptscale_up*corr*uncorrJet.pt());
+	corr_jet_ptSmearDown.push_back(ptscale_down*corr*uncorrJet.pt());
+	
+	
+	++numjet;
+      }
+    }
+    btagWeight = (btagWeight/MC);
+    btagWeightUp = (btagWeightUp/MC);
+    btagWeightDn = (btagWeightDn/MC);   
   }
-  // fill event info
-  SelectEvent(iEvent);
-  // all done: store event
-  _tree->Fill();
-  _neventsSelected++;
+  
+  mtree->Fill();
+  return;
+  
 }
-
-
-// ------------ method called when starting to processes a run  ------------
-void Analyzer::beginRun(edm::Run const& iRun, edm::EventSetup const& iSetup)
-{
-}
-
-// below is some default stuff, was not modified
 
 // ------------ method called once each job just before starting event loop  ------------
-void Analyzer::beginJob() {;}
+void
+JetAnalyzer::beginJob()
+{}
 
 // ------------ method called once each job just after ending the event loop  ------------
-void Analyzer::endJob() {;}
+void
+JetAnalyzer::endJob()
+{}
+
+// ------------ method called when starting to processes a run  ------------
+void
+JetAnalyzer::beginRun(edm::Run const&, edm::EventSetup const&)
+{}
 
 // ------------ method called when ending the processing of a run  ------------
-void Analyzer::endRun(edm::Run const& run, edm::EventSetup const& setup) {;}
-
+void
+JetAnalyzer::endRun(edm::Run const&, edm::EventSetup const&)
+{}
 // ------------ method called when starting to processes a luminosity block  ------------
-void Analyzer::beginLuminosityBlock(edm::LuminosityBlock const&, edm::EventSetup const&) {;}
+void
+JetAnalyzer::beginLuminosityBlock(edm::LuminosityBlock const&, edm::EventSetup const&)
+{}
 
 // ------------ method called when ending the processing of a luminosity block  ------------
-void Analyzer::endLuminosityBlock(edm::LuminosityBlock const&, edm::EventSetup const&) {;}
+void
+JetAnalyzer::endLuminosityBlock(edm::LuminosityBlock const&, edm::EventSetup const&)
+{
+}
 
 // ------------ method fills 'descriptions' with the allowed parameters for the module  ------------
-void Analyzer::fillDescriptions(edm::ConfigurationDescriptions& descriptions)
-{
-  //The following says we do not know what parameters are allowed so do no validation
+void
+JetAnalyzer::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
+ //The following says we do not know what parameters are allowed so do no validation
   // Please change this to state exactly what you do use, even if it is no parameters
   edm::ParameterSetDescription desc;
   desc.setUnknown();
@@ -409,4 +303,4 @@ void Analyzer::fillDescriptions(edm::ConfigurationDescriptions& descriptions)
 }
 
 //define this as a plug-in
-DEFINE_FWK_MODULE(Analyzer);
+DEFINE_FWK_MODULE(JetAnalyzer);
