@@ -7,10 +7,7 @@
 <use name="hepmc"/>
 <use name="boost"/>
 <use name="fastjet"/>
-<use name="FWCore/PluginManager"/>
-<use name="FWCore/ParameterSet"/>
 <use name="FWCore/ServiceRegistry"/>
-<use name="FWCore/Framework"/>
 <use name="PhysicsTools/UtilAlgos"/>
 <use name="CommonTools/UtilAlgos"/>
 <use name="Geometry/CaloGeometry"/>
@@ -37,17 +34,11 @@
 <use name="CalibFormats/HcalObjects"/>
 <use name="RecoLocalCalo/HcalRecAlgos"/>
 <use name="RecoBTag/SecondaryVertex"/>
-<use name="FWCore/PluginManager"/>
-<use name="FWCore/ParameterSet"/>
-<use name="DataFormats/JetReco"/>
 <use name="DataFormats/TrackReco"/>
-<use name="CommonTools/UtilAlgos"/>
-<use name="PhysicsTools/UtilAlgos"/>
 <use name="DataFormats/MuonReco"/>
 <use name="RecoMuon/TrackingTools"/>
 <use name="DataFormats/BTauReco"/> 
 <use name="DataFormats/Common"/>
-<use name="HLTrigger/HLTcore"/> 
 <use name="JetMETCorrections/Objects"/>
 <flags EDM_PLUGIN="1"/>
 <export>
