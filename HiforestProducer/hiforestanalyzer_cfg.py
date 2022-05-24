@@ -81,71 +81,9 @@ process.mytracks= cms.EDAnalyzer('TrackAnalyzer')
 JecString = 'START53_V27_'
 if isData: JecString = 'FT53_V21A_AN6_'
 
-#---- Jets are simpler to work with in "Physics Analysis Toolkit" format. See more at https://twiki.cern.ch/twiki/bin/view/CMSPublic/WorkBookPAT
-if doPat:
-	#---- Load PAT configs and build some light sequences to process jets and MET
-	process.load('PhysicsTools.PatAlgos.producersLayer1.jetProducer_cff')
-	process.load('PhysicsTools.PatAlgos.producersLayer1.metProducer_cff')
-	process.load('PhysicsTools.PatAlgos.selectionLayer1.jetSelector_cfi')
-	process.patCandidates = cms.Sequence(process.makePatJets+process.makePatMETs)
-	process.selectedPatCandidates = cms.Sequence(process.selectedPatJets)
-	process.patDefaultSequence = cms.Sequence(process.patCandidates * process.selectedPatCandidates)
-	process.load('RecoJets.Configuration.RecoPFJets_cff')
-	from PhysicsTools.PatAlgos.tools.jetTools import addJetCollection, runBTagging
-	from PhysicsTools.PatAlgos.tools.coreTools import runOnData
-
-	#---- Choose which jet correction levels to apply
-	jetcorrlabels = ['L1FastJet','L2Relative','L3Absolute']
-	if isData:
-		#---- For data we need to remove generator-level matching processes
-		runOnData(process, ['Jets','METs'], "", None, [])
-		jetcorrlabels.append('L2L3Residual')
-
-	#---- Configure the addJetCollection tool
-	#---- This process will make corrected jets with b-tagging included, and will make Type1-corrected MET
-	process.ak5PFJets.doAreaFastjet = True
-	addJetCollection(process,cms.InputTag('ak5PFJets'),
-			 'AK5', 'PFCorr',
-			 doJTA        = True,
-			 #doBTagging   = True, 
-			 jetCorrLabel = ('AK5PF', cms.vstring(jetcorrlabels)),
-			 doType1MET   = True,
-			 doL1Cleaning = False,
-			 doL1Counters = False,
-			 doJetID      = True,
-			 jetIdLabel   = "ak5",
-			 ) 
- 
-	#---- Configure the POET jet analyzer
-	#---- Don't forget to run jec_cfg.py to get these .txt files!
-	process.myjets= cms.EDAnalyzer('PatJetAnalyzer',
-				       InputCollection = cms.InputTag("selectedPatJetsAK5PFCorr"),
-				       isData = cms.bool(isData),
-				       jecUncName = cms.FileInPath('HiForest/HiForestProducer/JEC/'+JecString+'Uncertainty_AK5PF.txt'), 
-				       jerResName = cms.FileInPath('HiForest/HiForestProducer/JEC/JetResolutionInputAK5PF.txt')         
-				       )
-else:
-	if not isData:
-		#---- Get non-PAT access to the jet flavour information
-		#from PhysicsTools.JetMCAlgos.HadronAndPartonSelector_cfi import selectedHadronsAndPartons
-		from PhysicsTools.JetMCAlgos.SelectPartons_cff import myPartons
-                #process.selectedHadronsAndPartons = selectedHadronsAndPartons.clone()
-		process.selectedHadronsAndPartons = myPartons.clone()
-                #from PhysicsTools.JetMCAlgos.AK5PFJetsMCFlavourInfos_cfi import ak5JetFlavourInfos
-		from PhysicsTools.JetMCAlgos.AK5CaloJetsMCFlavour_cff import AK5byValAlgo
-                #process.jetFlavourInfosAK5PFJets = AK5byValAlgo.clone()
-
-	#---- Configure the POET jet analyzer
-	#---- Don't forget to run jec_cfg.py to get these .txt files!
-	process.myjets= cms.EDAnalyzer('JetAnalyzer',
-				       InputCollection = cms.InputTag("ak5PFJets"),
-				       isData = cms.bool(isData),
-				       jecL1Name = cms.FileInPath('HiForest/HiForestProducer/JEC/'+JecString+'L1FastJet_AK5PF.txt'), 
-				       jecL2Name = cms.FileInPath('HiForest/HiForestProducer/JEC/'+JecString+'L2Relative_AK5PF.txt'),
-				       jecL3Name = cms.FileInPath('HiForest/HiForestProducer/JEC/'+JecString+'L3Absolute_AK5PF.txt'),
-				       jecResName = cms.FileInPath('HiForest/HiForestProducer/JEC/'+JecString+'L2L3Residual_AK5PF.txt'),
-				       jecUncName = cms.FileInPath('HiForest/HiForestProducer/JEC/'+JecString+'Uncertainty_AK5PF.txt'),
-				       jerResName = cms.FileInPath('HiForest/HiForestProducer/JEC/JetResolutionInputAK5PF.txt')
+process.myjets= cms.EDAnalyzer('JetAnalyzer',
+				       InputCollection = cms.InputTag("akPu4Calo"),
+				       isData = cms.bool(isData),				      
 				       )
 
 process.dump=cms.EDAnalyzer('EventContentAnalyzer') #easy check of Event structure and names without using the TBrowser
