@@ -77,7 +77,6 @@ process.myevents = cms.EDAnalyzer('EventAnalyzer')
 
 process.mytracks= cms.EDAnalyzer('TrackAnalyzer')
 
-#---- Jet correction paths -- these correspond to the Global Tag. **Run jec_cfg.py first to get .txt files!!**
 JecString = 'START53_V27_'
 if isData: JecString = 'FT53_V21A_AN6_'
 
