@@ -69,7 +69,7 @@ private:
   virtual void beginLuminosityBlock(edm::LuminosityBlock const&, edm::EventSetup const&);
   virtual void endLuminosityBlock(edm::LuminosityBlock const&, edm::EventSetup const&);  
       
-  //declare the input tag for PFJetCollection
+  //declare the input tag for CaloJetCollection
   edm::InputTag jetInput;
   
   // ----------member data ---------------------------    
