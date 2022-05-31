@@ -183,7 +183,7 @@ JetAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   Handle<reco::VertexCollection> vertices;
   iEvent.getByLabel(InputTag("offlinePrimaryVertices"), vertices);
   Handle<reco::JetFlavourMatchingCollection> injets;
-  if (isData){
+  if (!isData){
     iEvent.getByLabel(InputTag("InputCollection"), injets);
   }
 
