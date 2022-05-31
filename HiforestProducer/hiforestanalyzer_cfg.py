@@ -81,9 +81,10 @@ JecString = 'START53_V27_'
 if isData: JecString = 'FT53_V21A_AN6_'
 
 process.myjets= cms.EDAnalyzer('JetAnalyzer',
-				       InputCollection = cms.InputTag("akPu4Calo"),
+				       InputCollection = cms.InputTag("ak5CaloJets"),
 				       isData = cms.bool(isData),				      
 				       )
+#Data formats in RecoJets: https://twiki.cern.ch/twiki/bin/view/CMSPublic/SWGuideDataFormatRecoJets#1_Configuration_File
 
 process.dump=cms.EDAnalyzer('EventContentAnalyzer') #easy check of Event structure and names without using the TBrowser
 
